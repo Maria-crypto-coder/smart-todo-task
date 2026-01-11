@@ -4,7 +4,7 @@ import { useTodos } from '@/hooks/useTodos';
 import TodoForm from './TodoForm';
 import TodoItem from './TodoItem';
 import TodoFilters from './TodoFilters';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function TodoList() {
   const {
@@ -18,6 +18,9 @@ export default function TodoList() {
     clearCompleted,
     stats,
     isLoaded,
+    isLoading,
+    error,
+    refetch,
   } = useTodos();
 
   if (!isLoaded) {
@@ -28,6 +31,30 @@ export default function TodoList() {
           <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-600 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
         </div>
         <p className="text-zinc-500 dark:text-zinc-400 animate-pulse">Cargando tus tareas...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-2xl">
+          <AlertCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
+        </div>
+        <h3 className="text-xl font-semibold text-zinc-900 dark:text-white">
+          Error al cargar las tareas
+        </h3>
+        <p className="text-zinc-500 dark:text-zinc-400 text-center max-w-md">
+          {error}
+        </p>
+        <button
+          onClick={refetch}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reintentar
+        </button>
       </div>
     );
   }
