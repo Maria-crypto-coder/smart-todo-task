@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Todo, TodoDB } from '@/types/todo';
 
 // Helper para convertir de DB format a App format
@@ -24,6 +24,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
+      );
+    }
+
+    if (!supabase || !isSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Supabase no está configurado. Por favor configura las variables de entorno.' },
+        { status: 500 }
       );
     }
 
@@ -62,6 +69,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
+      );
+    }
+
+    if (!supabase || !isSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Supabase no está configurado. Por favor configura las variables de entorno.' },
+        { status: 500 }
       );
     }
 
