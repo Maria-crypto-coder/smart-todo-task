@@ -50,6 +50,8 @@ export function useTodos() {
     try {
       setError(null);
 
+      console.log('useTodos - addTodo called with:', { text, options });
+
       // Optimistic update
       const tempTodo: Todo = {
         id: crypto.randomUUID(),
@@ -64,19 +66,24 @@ export function useTodos() {
       };
       setTodos((prev) => [tempTodo, ...prev]);
 
+      const payload = {
+        text,
+        category: options?.category,
+        tags: options?.tags,
+        priority: options?.priority,
+        due_date: options?.due_date,
+      };
+
+      console.log('useTodos - Sending payload to API:', payload);
+
       const response = await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          category: options?.category,
-          tags: options?.tags,
-          priority: options?.priority,
-          due_date: options?.due_date,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result: TodoResponse = await response.json();
+      console.log('useTodos - API response:', result);
 
       if (!response.ok || result.error) {
         // Revert optimistic update
