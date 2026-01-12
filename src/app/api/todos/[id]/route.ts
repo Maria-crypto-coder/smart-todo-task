@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { Todo, TodoDB } from '@/types/todo';
+import { Todo, TodoDB, Priority } from '@/types/todo';
 
 // Helper para convertir de DB format a App format
 function dbToTodo(dbTodo: TodoDB): Todo {
@@ -12,7 +12,16 @@ function dbToTodo(dbTodo: TodoDB): Todo {
     createdAt: new Date(dbTodo.created_at).getTime(),
     updatedAt: new Date(dbTodo.updated_at).getTime(),
     userId: dbTodo.user_id,
+    category: dbTodo.category,
+    tags: dbTodo.tags || [],
+    priority: dbTodo.priority,
+    due_date: dbTodo.due_date ? new Date(dbTodo.due_date).getTime() : undefined,
   };
+}
+
+// Validar prioridad
+function isValidPriority(priority: any): priority is Priority {
+  return ['high', 'medium', 'low'].includes(priority);
 }
 
 // PATCH /api/todos/[id] - Actualizar una tarea
@@ -39,10 +48,17 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { text, completed } = body;
+    const { text, completed, category, tags, priority, due_date } = body;
 
     // Validar que al menos un campo esté presente
-    if (text === undefined && completed === undefined) {
+    if (
+      text === undefined &&
+      completed === undefined &&
+      category === undefined &&
+      tags === undefined &&
+      priority === undefined &&
+      due_date === undefined
+    ) {
       return NextResponse.json(
         { error: 'Se requiere al menos un campo para actualizar' },
         { status: 400 }
@@ -54,6 +70,7 @@ export async function PATCH(
       updated_at: new Date().toISOString(),
     };
 
+    // Validar y agregar texto
     if (text !== undefined) {
       if (typeof text !== 'string' || text.trim().length === 0) {
         return NextResponse.json(
@@ -64,6 +81,7 @@ export async function PATCH(
       updates.text = text.trim();
     }
 
+    // Validar y agregar completed
     if (completed !== undefined) {
       if (typeof completed !== 'boolean') {
         return NextResponse.json(
@@ -72,6 +90,43 @@ export async function PATCH(
         );
       }
       updates.completed = completed;
+    }
+
+    // Agregar categoría
+    if (category !== undefined) {
+      updates.category = category || null;
+    }
+
+    // Validar y agregar tags
+    if (tags !== undefined) {
+      if (!Array.isArray(tags)) {
+        return NextResponse.json(
+          { error: 'Tags debe ser un array' },
+          { status: 400 }
+        );
+      }
+      updates.tags = tags;
+    }
+
+    // Validar y agregar prioridad
+    if (priority !== undefined) {
+      if (priority && !isValidPriority(priority)) {
+        return NextResponse.json(
+          { error: 'Prioridad inválida. Debe ser: high, medium o low' },
+          { status: 400 }
+        );
+      }
+      updates.priority = priority || null;
+    }
+
+    // Agregar fecha de vencimiento
+    if (due_date !== undefined) {
+      if (due_date === null) {
+        updates.due_date = null;
+      } else {
+        // Convertir timestamp a ISO string
+        updates.due_date = new Date(due_date).toISOString();
+      }
     }
 
     // Actualizar solo si pertenece al usuario
