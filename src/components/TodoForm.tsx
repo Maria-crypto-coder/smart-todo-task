@@ -29,16 +29,12 @@ export default function TodoForm({ onAdd }: TodoFormProps) {
     e.preventDefault();
     if (input.trim()) {
       try {
-        const options = {
+        await onAdd(input, {
           category: category || undefined,
           tags: tags.length > 0 ? tags : undefined,
           priority,
           due_date: dueDate,
-        };
-        
-        console.log('TodoForm - Submitting with options:', options);
-        
-        await onAdd(input, options);
+        });
         
         // Reset form
         setInput('');
