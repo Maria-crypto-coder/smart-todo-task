@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Todo, FilterType, TodosResponse, TodoResponse } from '@/types/todo';
+import { Todo, FilterType, TodosResponse, TodoResponse, Priority } from '@/types/todo';
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -38,7 +38,15 @@ export function useTodos() {
     }
   };
 
-  const addTodo = async (text: string) => {
+  const addTodo = async (
+    text: string,
+    options?: {
+      category?: string;
+      tags?: string[];
+      priority?: Priority;
+      due_date?: number;
+    }
+  ) => {
     try {
       setError(null);
 
@@ -49,13 +57,23 @@ export function useTodos() {
         completed: false,
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        category: options?.category,
+        tags: options?.tags || [],
+        priority: options?.priority,
+        due_date: options?.due_date,
       };
       setTodos((prev) => [tempTodo, ...prev]);
 
       const response = await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          category: options?.category,
+          tags: options?.tags,
+          priority: options?.priority,
+          due_date: options?.due_date,
+        }),
       });
 
       const result: TodoResponse = await response.json();
@@ -73,6 +91,7 @@ export function useTodos() {
     } catch (err) {
       console.error('Error adding todo:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
+      throw err;
     }
   };
 
@@ -143,7 +162,16 @@ export function useTodos() {
     }
   };
 
-  const editTodo = async (id: string, newText: string) => {
+  const editTodo = async (
+    id: string,
+    updates: {
+      text?: string;
+      category?: string;
+      tags?: string[];
+      priority?: Priority;
+      due_date?: number;
+    }
+  ) => {
     try {
       setError(null);
 
@@ -151,16 +179,21 @@ export function useTodos() {
       const todo = todos.find((t) => t.id === id);
       if (!todo) return;
 
+      const updatedTodo = {
+        ...todo,
+        ...updates,
+        text: updates.text !== undefined ? updates.text.trim() : todo.text,
+        updatedAt: Date.now(),
+      };
+
       setTodos((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, text: newText.trim(), updatedAt: Date.now() } : t
-        )
+        prev.map((t) => (t.id === id ? updatedTodo : t))
       );
 
       const response = await fetch(`/api/todos/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newText }),
+        body: JSON.stringify(updates),
       });
 
       const result: TodoResponse = await response.json();
@@ -180,6 +213,7 @@ export function useTodos() {
     } catch (err) {
       console.error('Error editing todo:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
+      throw err;
     }
   };
 
@@ -225,6 +259,7 @@ export function useTodos() {
 
   return {
     todos: filteredTodos,
+    allTodos: todos,
     filter,
     setFilter,
     addTodo,
