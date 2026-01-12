@@ -38,7 +38,22 @@ export default function TodoItem({
   const [editDueDate, setEditDueDate] = useState(todo.due_date);
 
   const handleEdit = () => {
-    if (editText.trim() && editText !== todo.text) {
+    if (!editText.trim()) {
+      // Si el texto está vacío, no guardar
+      setEditText(todo.text);
+      setIsEditing(false);
+      return;
+    }
+
+    // Verificar si algo cambió
+    const hasChanges = 
+      editText !== todo.text ||
+      editCategory !== (todo.category || '') ||
+      JSON.stringify(editTags) !== JSON.stringify(todo.tags || []) ||
+      editPriority !== todo.priority ||
+      editDueDate !== todo.due_date;
+
+    if (hasChanges) {
       onEdit(todo.id, {
         text: editText,
         category: editCategory || undefined,
@@ -46,14 +61,8 @@ export default function TodoItem({
         priority: editPriority,
         due_date: editDueDate,
       });
-    } else {
-      // Reset to original values
-      setEditText(todo.text);
-      setEditCategory(todo.category || '');
-      setEditTags(todo.tags || []);
-      setEditPriority(todo.priority);
-      setEditDueDate(todo.due_date);
     }
+    
     setIsEditing(false);
   };
 
